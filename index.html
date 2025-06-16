@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=0.5, maximum-scale=3.0, user-scalable=yes">
+    <title>亲子活动选座系统</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 15px;
+            background-color: #f8f9fa;
+            touch-action: manipulation;
+            -webkit-text-size-adjust: 100%;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .header img {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 3px solid white;
+            margin-bottom: 10px;
+        }
+        .form-container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: bold;
+            color: #333;
+            font-size: 14px;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 15px;
+            transition: border 0.3s;
+        }
+        input:focus, select:focus {
+            border-color: #4CAF50;
+            outline: none;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(to right, #4CAF50, #2E8B57);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .success-container {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+        }
+        .success-image {
+            max-width: 200px;
+            height: auto;
+            margin: 15px auto;
+        }
+        .admin-section {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+        }
+        
+        /* 选座系统样式 */
+        .seat-selection {
+            display: none;
+            margin-top: 20px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            width: 100%;
+            padding-bottom: 15px;
+            background-color: white;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+        }
+        .screen {
+            position: sticky;
+            left: 0;
+            background: linear-gradient(to right, #333, #555);
+            color: white;
+            text-align: center;
+            padding: 12px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            width: 100%;
+            z-index: 10;
+            font-weight: bold;
+            font-size: 16px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .seats-container {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            transform-origin: left center;
+            transition: transform 0.2s;
+            min-width: max-content;
+            padding: 10px 15px;
+        }
+        .seat-row {
+            display: flex;
+            margin-bottom: 8px;
+            align-items: center;
+            position: relative;
+        }
+        .row-label {
+            position: absolute;
+            left: -25px;
+            font-weight: bold;
+            font-size: 14px;
+            color: #333;
+        }
+        .seat {
+            width: 28px;
+            height: 28px;
+            margin: 0 3px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+            font-size: 12px;
+            font-weight: bold;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .seat:hover {
+            background-color: #d1d7dc;
+        }
+        .seat.selected {
+            background: linear-gradient(135deg, #f44336, #e53935);
+            color: white;
+            transform: scale(1.05);
+        }
+        .seat.occupied {
+            background: linear-gradient(135deg, #6c757d, #495057);
+            color: white;
+            cursor: not-allowed;
+        }
+        .aisle {
+            width: 25px;
+            margin: 0 5px;
+        }
+        .seat-number {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            color: #666;
+        }
+        .legend {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 5px 12px;
+            font-size: 13px;
+        }
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            margin-right: 6px;
+            border-radius: 3px;
+        }
+        .legend-available {
+            background-color: #e9ecef;
+        }
+        .legend-selected {
+            background: linear-gradient(135deg, #f44336, #e53935);
+        }
+        
+        /* 缩放控制按钮 */
+        .zoom-controls {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+        }
+        .zoom-btn {
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(135deg, #4CAF50, #2E8B57);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 5px;
+            font-size: 22px;
+            cursor: pointer;
+            user-select: none;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.16);
+            transition: all 0.2s;
+        }
+        .zoom-btn:active {
+            transform: scale(0.95);
+        }
+        
+        /* 滑动提示 */
+        .scroll-hint {
+            text-align: center;
+            color: #6c757d;
+            font-size: 14px;
+            margin: 10px 0;
+            padding: 8px;
+            background-color: #f1f3f5;
+            border-radius: 20px;
+            display: none;
+        }
+        
+        /* 顶部数字标识 */
+        .seat-numbers-header {
+            display: flex;
+            margin-left: 25px;
+            margin-bottom: 5px;
+        }
+        .seat-number-header {
+            width: 28px;
+            margin: 0 3px;
+            text-align: center;
+            font-size: 10px;
+            color: #666;
+            font-weight: bold;
+        }
+        .aisle-header {
+            width: 25px;
+            margin: 0 5px;
+        }
+        
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            .header {
+                padding: 15px 10px;
+            }
+            .header h1 {
+                font-size: 22px;
+            }
+            .form-container {
+                padding: 15px;
+            }
+            .seat {
+                width: 24px;
+                height: 24px;
+                font-size: 11px;
+            }
+            .aisle {
+                width: 20px;
+            }
+            .seat-number-header {
+                width: 24px;
+                font-size: 9px;
+            }
+            .aisle-header {
+                width: 20px;
+            }
+            .scroll-hint {
+                display: block;
+            }
+            .zoom-controls {
+                bottom: 15px;
+                right: 15px;
+            }
+            .zoom-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <img src="logo.png" alt="活动logo">
+        <h1>亲子活动选座系统</h1>
+    </div>
+    
+    <div class="form-container">
+        <form id="signForm">
+            <div class="form-group">
+                <label for="childName">幼儿姓名</label>
+                <input type="text" id="childName" required placeholder="请输入幼儿姓名">
+            </div>
+            <div class="form-group">
+                <label for="childAge">幼儿年龄</label>
+                <input type="number" id="childAge" required placeholder="请输入幼儿年龄" min="2" max="10">
+            </div>
+            <div class="form-group">
+                <label for="guardian">陪同人员</label>
+                <input type="text" id="guardian" required placeholder="请输入陪同人员姓名">
+            </div>
+            <div class="form-group">
+                <label for="phone">联系电话</label>
+                <input type="tel" id="phone" required placeholder="请输入联系电话" pattern="[0-9]{11}">
+            </div>
+            <div class="form-group">
+                <label for="community">所在社区</label>
+                <select id="community" required>
+                    <option value="">请选择所在社区</option>
+                    <option value="阳光社区">阳光社区</option>
+                    <option value="和谐社区">和谐社区</option>
+                    <option value="幸福社区">幸福社区</option>
+                    <option value="平安社区">平安社区</option>
+                    <option value="其他">其他</option>
+                </select>
+            </div>
+            <button type="submit">提交信息</button>
+        </form>
+        
+        <div class="seat-selection" id="seatSelection">
+            <div class="screen">活动舞台</div>
+            
+            <!-- 座位数字标题 -->
+            <div class="seat-numbers-header">
+                <div style="width: 25px;"></div> <!-- 排标签占位 -->
+                <!-- 左侧5个座位 -->
+                <div class="seat-number-header">1</div>
+                <div class="seat-number-header">2</div>
+                <div class="seat-number-header">3</div>
+                <div class="seat-number-header">4</div>
+                <div class="seat-number-header">5</div>
+                <div class="aisle-header"></div>
+                <!-- 中间12个座位 -->
+                <div class="seat-number-header">6</div>
+                <div class="seat-number-header">7</div>
+                <div class="seat-number-header">8</div>
+                <div class="seat-number-header">9</div>
+                <div class="seat-number-header">10</div>
+                <div class="seat-number-header">11</div>
+                <div class="seat-number-header">12</div>
+                <div class="seat-number-header">13</div>
+                <div class="seat-number-header">14</div>
+                <div class="seat-number-header">15</div>
+                <div class="seat-number-header">16</div>
+                <div class="seat-number-header">17</div>
+                <div class="aisle-header"></div>
+                <!-- 右侧5个座位 -->
+                <div class="seat-number-header">18</div>
+                <div class="seat-number-header">19</div>
+                <div class="seat-number-header">20</div>
+                <div class="seat-number-header">21</div>
+                <div class="seat-number-header">22</div>
+                <!-- 新增一排的座位 -->
+                <div class="aisle-header"></div>
+                <div class="seat-number-header">23</div>
+                <div class="seat-number-header">24</div>
+                <div class="seat-number-header">25</div>
+                <div class="seat-number-header">26</div>
+                <div class="seat-number-header">27</div>
+                <div class="seat-number-header">28</div>
+            </div>
+            
+            <div class="seats-container" id="seatsContainer"></div>
+            <div class="scroll-hint">← 左右滑动查看所有座位 →</div>
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color legend-available"></div>
+                    <span>可选座位</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color legend-selected"></div>
+                    <span>已选座位</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="success-container" id="successContainer">
+            <h2>选座成功！</h2>
+            <img class="success-image" src="success.png" alt="选座成功">
+            <p class="seat-info" id="seatInfo"></p>
+            <p>请截图保存此页面</p>
+            <div id="qrCode" style="margin: 20px auto; width: 150px; height: 150px;"></div>
+            <p>感谢您的参与</p>
+        </div>
+    </div>
+    
+    <!-- 管理员区域 - 可以添加密码保护 -->
+    <div class="admin-section" id="adminSection">
+        <h2>数据管理</h2>
+        <button onclick="exportData()">导出选座数据(Excel)</button>
+        <button onclick="clearData()" style="background: linear-gradient(to right, #f44336, #d32f2f); margin-top: 10px;">清空所有数据</button>
+        <div id="dataPreview" style="margin-top: 20px;"></div>
+    </div>
+
+    <!-- 缩放控制按钮 -->
+    <div class="zoom-controls">
+        <div class="zoom-btn" id="zoomIn">+</div>
+        <div class="zoom-btn" id="zoomOut">-</div>
+    </div>
+
+    <!-- 引入QRCode生成库 -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+
+    <script>
+        // 显示/隐藏管理员区域
+        document.getElementById('adminSection').style.display = 'none';
+        
+        // 显示管理员区域的简单密码验证
+        const password = prompt("请输入管理员密码(默认:123)");
+        if (password === "123") {
+            document.getElementById('adminSection').style.display = 'block';
+            loadDataPreview();
+        }
+
+        // 初始化座位数据
+        let seatData = JSON.parse(localStorage.getItem('seatData') || '[]');
+        let selectedSeat = localStorage.getItem('selectedSeat') || null;
+        
+        // 检查是否已经选座
+        if (selectedSeat) {
+            showSuccessPage(selectedSeat);
+        }
+        
+        // 缩放相关变量
+        let currentScale = 1;
+        const minScale = 0.5;
+        const maxScale = 3;
+        const scaleStep = 0.2;
+        const seatsContainer = document.getElementById('seatsContainer');
+        const seatSelection = document.getElementById('seatSelection');
+        
+        // 初始化缩放控制
+        document.getElementById('zoomIn').addEventListener('click', () => {
+            zoom(scaleStep);
+        });
+        
+        document.getElementById('zoomOut').addEventListener('click', () => {
+            zoom(-scaleStep);
+        });
+        
+        // 触摸事件处理
+        let initialDistance = null;
+        
+        seatsContainer.addEventListener('touchstart', function(e) {
+            if (e.touches.length === 2) {
+                e.preventDefault();
+                initialDistance = getDistance(e.touches[0], e.touches[1]);
+            }
+        });
+        
+        seatsContainer.addEventListener('touchmove', function(e) {
+            if (e.touches.length === 2) {
+                e.preventDefault();
+                const currentDistance = getDistance(e.touches[0], e.touches[1]);
+                if (initialDistance !== null) {
+                    const scale = currentDistance / initialDistance;
+                    zoom((scale - 1) * 0.5);
+                }
+                initialDistance = currentDistance;
+            }
+        });
+        
+        seatsContainer.addEventListener('touchend', function() {
+            initialDistance = null;
+        });
+        
+        function getDistance(touch1, touch2) {
+            const dx = touch1.clientX - touch2.clientX;
+            const dy = touch1.clientY - touch2.clientY;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+        
+        function zoom(amount) {
+            const scrollLeftBefore = seatSelection.scrollLeft;
+            const scrollRatio = scrollLeftBefore / (seatSelection.scrollWidth - seatSelection.clientWidth);
+            
+            currentScale = Math.min(maxScale, Math.max(minScale, currentScale + amount));
+            seatsContainer.style.transform = `scale(${currentScale})`;
+            
+            // 保持缩放时的滚动位置
+            setTimeout(() => {
+                const newScrollLeft = scrollRatio * (seatSelection.scrollWidth - seatSelection.clientWidth);
+                seatSelection.scrollLeft = newScrollLeft;
+            }, 10);
+        }
+        
+        // 创建座位图
+        function createSeatMap() {
+            const container = document.getElementById('seatsContainer');
+            container.innerHTML = '';
+            
+            const rows = 9; // 9排 (A-I)
+            
+            for (let row = 0; row < rows; row++) {
+                const rowLetter = String.fromCharCode(65 + row); // A-I
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'seat-row';
+                
+                // 添加排标签
+                const rowLabel = document.createElement('div');
+                rowLabel.className = 'row-label';
+                rowLabel.textContent = `${rowLetter}排`;
+                rowDiv.appendChild(rowLabel);
+                
+                // 左侧5个座位
+                for (let seat = 1; seat <= 5; seat++) {
+                    createSeat(rowDiv, rowLetter, seat);
+                }
+                
+                // 左侧通道
+                const leftAisle = document.createElement('div');
+                leftAisle.className = 'aisle';
+                rowDiv.appendChild(leftAisle);
+                
+                // 中间12个座位
+                for (let seat = 6; seat <= 17; seat++) {
+                    createSeat(rowDiv, rowLetter, seat);
+                }
+                
+                // 右侧通道
+                const rightAisle = document.createElement('div');
+                rightAisle.className = 'aisle';
+                rowDiv.appendChild(rightAisle);
+                
+                // 右侧5个座位
+                for (let seat = 18; seat <= 22; seat++) {
+                    createSeat(rowDiv, rowLetter, seat);
+                }
+                
+                // 新增一排的座位（右侧6个）
+                if (row === rows - 1) { // 最后一排
+                    const extraAisle = document.createElement('div');
+                    extraAisle.className = 'aisle';
+                    rowDiv.appendChild(extraAisle);
+                    
+                    for (let seat = 23; seat <= 28; seat++) {
+                        createSeat(rowDiv, rowLetter, seat);
+                    }
+                }
+                
+                container.appendChild(rowDiv);
+            }
+            
+            // 重置缩放
+            currentScale = 1;
+            seatsContainer.style.transform = 'scale(1)';
+            
+            // 自动滚动到中间位置
+            setTimeout(() => {
+                const centerScroll = (seatSelection.scrollWidth - seatSelection.clientWidth) / 2;
+                seatSelection.scrollLeft = centerScroll;
+            }, 100);
+        }
+        
+        // 创建单个座位
+        function createSeat(rowDiv, rowLetter, seatNum) {
+            const seatId = `${rowLetter}-${seatNum}`;
+            const seatDiv = document.createElement('div');
+            seatDiv.className = 'seat';
+            seatDiv.textContent = seatNum;
+            seatDiv.dataset.seat = seatId;
+            
+            // 添加座位数字标签
+            const seatNumber = document.createElement('div');
+            seatNumber.className = 'seat-number';
+            seatNumber.textContent = seatNum;
+            seatDiv.appendChild(seatNumber);
+            
+            // 检查是否已被占用
+            if (seatData.some(item => item.seat === seatId)) {
+                seatDiv.classList.add('occupied');
+            }
+            
+            // 第一排中间12个座位标红
+            if (rowLetter === 'A' && seatNum >= 6 && seatNum <= 17) {
+                seatDiv.classList.add('occupied');
+            }
+            
+            seatDiv.addEventListener('click', () => selectSeat(seatId));
+            rowDiv.appendChild(seatDiv);
+        }
+        
+        // 选择座位
+        function selectSeat(seatId) {
+            const seatDiv = document.querySelector(`.seat[data-seat="${seatId}"]`);
+            
+            // 如果座位已被占用，不能选择
+            if (seatDiv.classList.contains('occupied')) {
+                return;
+            }
+            
+            // 取消之前的选择
+            document.querySelectorAll('.seat.selected').forEach(seat => {
+                seat.classList.remove('selected');
+            });
+            
+            // 选择新座位
+            seatDiv.classList.add('selected');
+            
+            // 显示确认按钮
+            const confirmBtn = document.getElementById('confirmSeat');
+            if (!confirmBtn) {
+                const btn = document.createElement('button');
+                btn.id = 'confirmSeat';
+                btn.textContent = '确认选座';
+                btn.style.marginTop = '20px';
+                btn.onclick = () => confirmSelection(seatId);
+                document.getElementById('seatSelection').appendChild(btn);
+            }
+        }
+        
+        // 确认选座
+        function confirmSelection(seatId) {
+            const childName = document.getElementById('childName').value;
+            const childAge = document.getElementById('childAge').value;
+            const guardian = document.getElementById('guardian').value;
+            const phone = document.getElementById('phone').value;
+            const community = document.getElementById('community').value;
+            
+            // 存储选座数据
+            seatData.push({
+                childName: childName,
+                childAge: childAge,
+                guardian: guardian,
+                phone: phone,
+                community: community,
+                seat: seatId,
+                time: new Date().toLocaleString('zh-CN')
+            });
+            localStorage.setItem('seatData', JSON.stringify(seatData));
+            
+            // 记录已选座位
+            localStorage.setItem('selectedSeat', seatId);
+            
+            // 显示成功页面
+            showSuccessPage(seatId);
+        }
+        
+        // 显示成功页面
+        function showSuccessPage(seatId) {
+            document.getElementById('signForm').style.display = 'none';
+            document.getElementById('seatSelection').style.display = 'none';
+            document.getElementById('successContainer').style.display = 'block';
+            
+            // 显示座位信息
+            const [row, seat] = seatId.split('-');
+            document.getElementById('seatInfo').textContent = `${row}排${seat}座`;
+            
+            // 生成二维码
+            generateQRCode(seatId);
+        }
+        
+        // 生成二维码
+        function generateQRCode(seatId) {
+            const qrCodeDiv = document.getElementById('qrCode');
+            qrCodeDiv.innerHTML = '';
+            
+            const text = `选座信息: ${seatId}\n幼儿: ${document.getElementById('childName').value}\n电话: ${document.getElementById('phone').value}`;
+            
+            QRCode.toCanvas(qrCodeDiv, text, {
+                width: 150,
+                margin: 2,
+                color: {
+                    dark: '#000000',
+                    light: '#ffffff'
+                }
+            }, function(error) {
+                if (error) console.error(error);
+            });
+        }
+        
+        // 提交表单
+        document.getElementById('signForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // 获取表单数据
+            const childName = document.getElementById('childName').value;
+            const childAge = document.getElementById('childAge').value;
+            const guardian = document.getElementById('guardian').value;
+            const phone = document.getElementById('phone').value;
+            const community = document.getElementById('community').value;
+            
+            // 验证表单
+            if (!childName || !childAge || !guardian || !phone || !community) {
+                alert('请填写完整信息');
+                return;
+            }
+            
+            // 隐藏表单，显示选座界面
+            document.getElementById('signForm').style.display = 'none';
+            document.getElementById('seatSelection').style.display = 'block';
+            
+            // 创建座位图
+            createSeatMap();
+        });
+        
+        // 导出Excel数据
+        function exportData() {
+            if (seatData.length === 0) {
+                alert('没有选座数据');
+                return;
+            }
+            
+            // 创建CSV内容
+            let csv = '\uFEFF'; // UTF-8 BOM
+            csv += '幼儿姓名,幼儿年龄,陪同人员,联系电话,所在社区,座位,选座时间\n';
+            
+            seatData.forEach(item => {
+                csv += `"${item.childName}","${item.childAge}","${item.guardian}","${item.phone}","${item.community}","${item.seat}","${item.time}"\n`;
+            });
+            
+            // 创建下载链接
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `亲子活动选座数据_${new Date().toLocaleDateString()}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        // 清空数据
+        function clearData() {
+            if (confirm('确定要清空所有选座数据吗？此操作不可撤销！')) {
+                localStorage.removeItem('seatData');
+                localStorage.removeItem('selectedSeat');
+                seatData = [];
+                selectedSeat = null;
+                loadDataPreview();
+                alert('数据已清空');
+                
+                // 重新显示表单
+                document.getElementById('signForm').style.display = 'block';
+                document.getElementById('seatSelection').style.display = 'none';
+                document.getElementById('successContainer').style.display = 'none';
+                document.getElementById('signForm').reset();
+            }
+        }
+        
+        // 加载数据预览
+        function loadDataPreview() {
+            const preview = document.getElementById('dataPreview');
+            
+            if (seatData.length === 0) {
+                preview.innerHTML = '<p>暂无选座数据</p>';
+                return;
+            }
+            
+            let html = '<h3>最近5条选座记录:</h3><table style="width:100%; border-collapse:collapse;">';
+            html += '<tr style="background-color:#f2f2f2;"><th style="padding:8px;border:1px solid #ddd;">幼儿姓名</th><th style="padding:8px;border:1px solid #ddd;">座位</th><th style="padding:8px;border:1px solid #ddd;">时间</th></tr>';
+            
+            const recentData = seatData.slice(-5).reverse();
+            recentData.forEach(item => {
+                html += `<tr style="border:1px solid #ddd;">
+                    <td style="padding:8px;border:1px solid #ddd;">${item.childName}</td>
+                    <td style="padding:8px;border:1px solid #ddd;">${item.seat}</td>
+                    <td style="padding:8px;border:1px solid #ddd;">${item.time}</td>
+                </tr>`;
+            });
+            
+            html += `</table><p style="margin-top:10px;">总记录数: ${seatData.length} 条</p>`;
+            
+            preview.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
